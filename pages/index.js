@@ -3,18 +3,29 @@ import PostFormCard from "../components/PostFormCard";
 import PostCard from "../components/PostCard";
 import {useSession, useSupabaseClient} from "@supabase/auth-helpers-react";
 import LoginPage from "./login";
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback} from "react";
 import {UserContext} from "../contexts/UserContext";
 
 export default function Home() {
   const supabase = useSupabaseClient();
   const session = useSession();
-  const [posts,setPosts] = useState([]);
-  const [profile,setProfile] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [profile, setProfile] = useState(null);
+
+  const fetchPosts = useCallback(() => {
+    supabase.from('posts')
+      .select('id, content, created_at, photos, profiles(id, avatar, name)')
+      .is('parent', null)
+      .order('created_at', {ascending: false})
+      .then(result => {
+        console.log('posts', result);
+        setPosts(result.data);
+      });
+  }, [supabase]);
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [fetchPosts]);
 
   useEffect(() => {
     if (!session?.user?.id) {
@@ -27,22 +38,11 @@ export default function Home() {
         if (result.data.length) {
           setProfile(result.data[0]);
         }
-      })
-  }, [session?.user?.id]);
-
-  function fetchPosts() {
-    supabase.from('posts')
-      .select('id, content, created_at, photos, profiles(id, avatar, name)')
-      .is('parent', null)
-      .order('created_at', {ascending: false})
-      .then(result => {
-        console.log('posts', result);
-        setPosts(result.data);
-      })
-  }
+      });
+  }, [session?.user?.id, supabase]);
 
   if (!session) {
-    return <LoginPage />
+    return <LoginPage />;
   }
 
   return (
@@ -54,5 +54,5 @@ export default function Home() {
         ))}
       </UserContext.Provider>
     </Layout>
-  )
+  );
 }
