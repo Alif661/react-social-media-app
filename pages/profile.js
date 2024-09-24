@@ -5,7 +5,7 @@ import Link from "next/link";
 import PostCard from "../components/PostCard";
 import {useRouter} from "next/router";
 import FriendInfo from "../components/FriendInfo";
-import {useEffect, useState} from "react";
+import {useEffect, useState, useCallback} from "react";
 import {useSession, useSupabaseClient} from "@supabase/auth-helpers-react";
 import Cover from "../components/Cover";
 import ProfileTabs from "../components/ProfileTabs";
@@ -13,10 +13,10 @@ import ProfileContent from "../components/ProfileContent";
 import {UserContextProvider} from "../contexts/UserContext";
 
 export default function ProfilePage() {
-  const [profile,setProfile] = useState(null);
-  const [editMode,setEditMode] = useState(false);
-  const [name,setName] = useState('');
-  const [place,setPlace] = useState('');
+  const [profile, setProfile] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [name, setName] = useState('');
+  const [place, setPlace] = useState('');
   const router = useRouter();
   const tab = router?.query?.tab?.[0] || 'posts';
   const session = useSession();
@@ -24,14 +24,7 @@ export default function ProfilePage() {
 
   const supabase = useSupabaseClient();
 
-  useEffect(() => {
-    if (!userId) {
-      return;
-    }
-    fetchUser();
-  }, [userId]);
-
-  function fetchUser() {
+  const fetchUser = useCallback(() => {
     supabase.from('profiles')
       .select()
       .eq('id', userId)
@@ -43,7 +36,14 @@ export default function ProfilePage() {
           setProfile(result.data[0]);
         }
       });
-  }
+  }, [supabase, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      return;
+    }
+    fetchUser();
+  }, [userId, fetchUser]);
 
   function saveProfile() {
     supabase.from('profiles')
@@ -54,12 +54,11 @@ export default function ProfilePage() {
       .eq('id', session.user.id)
       .then(result => {
         if (!result.error) {
-          setProfile(prev => ({...prev,name,place}));
+          setProfile(prev => ({...prev, name, place}));
         }
         setEditMode(false);
       });
   }
-
 
   const isMyUser = userId === session?.user?.id;
 

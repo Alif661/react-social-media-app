@@ -1,7 +1,7 @@
 import Avatar from "./Avatar";
 import Card from "./Card";
-import ClickOutHandler from 'react-clickout-handler'
-import {useContext, useEffect, useState} from "react";
+import ClickOutHandler from 'react-clickout-handler';
+import {useContext, useEffect, useState, useCallback} from "react";
 import Link from "next/link";
 import ReactTimeAgo from "react-time-ago";
 import {UserContext} from "../contexts/UserContext";
@@ -15,12 +15,8 @@ export default function PostCard({id,content,created_at,photos,profiles:authorPr
   const [isSaved,setIsSaved] = useState(false);
   const {profile:myProfile} = useContext(UserContext);
   const supabase = useSupabaseClient();
-  useEffect(() => {
-    fetchLikes();
-    fetchComments();
-    if (myProfile?.id) fetchIsSaved();
-  }, [myProfile?.id]);
-  function fetchIsSaved() {
+
+  const fetchIsSaved = useCallback(() => {
     supabase
       .from('saved_posts')
       .select()
@@ -32,26 +28,39 @@ export default function PostCard({id,content,created_at,photos,profiles:authorPr
         } else {
           setIsSaved(false);
         }
-      })
-  }
-  function fetchLikes() {
+      });
+  }, [id, myProfile?.id, supabase]);
+
+  const fetchLikes = useCallback(() => {
     supabase.from('likes').select().eq('post_id', id)
       .then(result => setLikes(result.data));
-  }
-  function fetchComments() {
+  }, [id, supabase]);
+
+  const fetchComments = useCallback(() => {
     supabase.from('posts')
       .select('*, profiles(*)')
       .eq('parent', id)
       .then(result => setComments(result.data));
-  }
+  }, [id, supabase]);
+
+  useEffect(() => {
+    if (myProfile?.id) {
+      fetchLikes();
+      fetchComments();
+      fetchIsSaved();
+    }
+  }, [myProfile?.id, fetchLikes, fetchComments, fetchIsSaved]);
+
   function openDropdown(e) {
     e.stopPropagation();
     setDropdownOpen(true);
   }
+
   function handleClickOutsideDropdown(e) {
     e.stopPropagation();
     setDropdownOpen(false);
   }
+
   function toggleSave() {
     if (isSaved) {
       supabase.from('saved_posts')
@@ -62,11 +71,10 @@ export default function PostCard({id,content,created_at,photos,profiles:authorPr
           setIsSaved(false);
           setDropdownOpen(false);
         });
-    }
-    if (!isSaved) {
+    } else {
       supabase.from('saved_posts').insert({
-        user_id:myProfile.id,
-        post_id:id,
+        user_id: myProfile.id,
+        post_id: id,
       }).then(result => {
         setIsSaved(true);
         setDropdownOpen(false);
@@ -84,31 +92,30 @@ export default function PostCard({id,content,created_at,photos,profiles:authorPr
         .then(() => {
           fetchLikes();
         });
-      return;
+    } else {
+      supabase.from('likes')
+        .insert({
+          post_id: id,
+          user_id: myProfile.id,
+        })
+        .then(() => {
+          fetchLikes();
+        });
     }
-    supabase.from('likes')
-      .insert({
-        post_id: id,
-        user_id: myProfile.id,
-      })
-      .then(result => {
-        fetchLikes();
-      })
   }
 
   function postComment(ev) {
     ev.preventDefault();
     supabase.from('posts')
       .insert({
-        content:commentText,
-        author:myProfile.id,
-        parent:id,
+        content: commentText,
+        author: myProfile.id,
+        parent: id,
       })
-      .then(result => {
-        console.log(result);
+      .then(() => {
         fetchComments();
         setCommentText('');
-      })
+      });
   }
 
   return (
