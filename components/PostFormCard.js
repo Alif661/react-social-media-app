@@ -52,9 +52,28 @@ export default function PostFormCard({onPost}) {
 
   return (
     <Card>
-      <div className="flex gap-2">
-        <div>
-          <Avatar url={profile?.avatar} />
+      <div className="flex gap-2">   
+
+        <div className="relative">
+          <Avatar url={profile?.avatar} size="lg" />
+          <div className="absolute bottom-0 right-0 bg-white rounded-full border border-gray-300 p-1">
+            {/* Add your desired border width and color here */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-4 h-4"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"   
+
+                d="M5.136 16.312c4.146 4.147 10.705 4.147 14.851 0 4.146-4.147 4.146-10.705 0-14.851-4.146-4.147-10.705-4.147-14.851 0z"
+              />
+            </svg>
+          </div>
         </div>
         {profile && (
           <textarea value={content}
