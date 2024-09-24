@@ -195,7 +195,7 @@ export default function PostCard({id,content,created_at,photos,profiles:authorPr
           <div className="flex gap-4">
             {photos.map(photo => (
               <div key={photo} className="">
-                <img src={photo} className="rounded-md" alt=""/>
+                <image src={photo} className="rounded-md" alt=""/>
               </div>
             ))}
           </div>
